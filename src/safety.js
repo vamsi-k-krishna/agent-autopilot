@@ -34,30 +34,79 @@ function parseCustomPattern(value) {
   return text.toLowerCase();
 }
 
-function inspectCommand(command, config = {}) {
-  const text = String(command || '').trim();
+function splitCommands(value) {
+  return String(value || '')
+    .split(/\r?\n|\|+/)
+    .map(command => command.trim())
+    .filter(Boolean);
+}
 
+function startsWithKeyword(command, keyword) {
+  const text = String(command || '').trim().toLowerCase();
+  const prefix = String(keyword || '').trim().toLowerCase();
+  if (!prefix) return false;
+
+  return text === prefix || text.startsWith(prefix + ' ');
+}
+
+function findKeyword(command, keywords) {
+  return (keywords || []).find(keyword => startsWithKeyword(command, keyword)) || null;
+}
+
+function inspectSegment(command, config) {
   for (const rule of BUILTIN_RULES) {
-    if (rule.pattern.test(text)) {
-      return { decision: 'ask', reason: 'builtin-safety-rule', rule: rule.id };
+    if (rule.pattern.test(command)) {
+      return { decision: 'ask', reason: 'builtin-safety-rule', rule: rule.id, command };
     }
   }
 
   for (const raw of config.terminalBlacklist || []) {
     const pattern = parseCustomPattern(raw);
     const matched = pattern instanceof RegExp
-      ? pattern.test(text)
-      : pattern && text.toLowerCase().includes(pattern);
+      ? pattern.test(command)
+      : pattern && command.toLowerCase().includes(pattern);
 
     if (matched) {
-      return { decision: 'ask', reason: 'custom-safety-rule', rule: raw };
+      return { decision: 'ask', reason: 'custom-safety-rule', rule: raw, command };
     }
+  }
+
+  const blockedKeyword = findKeyword(command, config.terminalBlockKeywords);
+  if (blockedKeyword) {
+    return { decision: 'ask', reason: 'blocked-keyword', rule: blockedKeyword, command };
+  }
+
+  const allowedKeyword = findKeyword(command, config.terminalAllowKeywords);
+  if (allowedKeyword) {
+    return { decision: 'allow', reason: 'allowed-keyword', rule: allowedKeyword, command };
   }
 
   return {
     decision: config.terminalDefaultPolicy === 'ask' ? 'ask' : 'allow',
-    reason: 'terminal-default-policy'
+    reason: 'terminal-default-policy',
+    command
   };
 }
 
-module.exports = { BUILTIN_RULES, inspectCommand, parseCustomPattern };
+function inspectCommand(command, config = {}) {
+  const commands = splitCommands(command);
+  if (!commands.length) {
+    return { decision: 'ask', reason: 'missing-command' };
+  }
+
+  const results = commands.map(segment => inspectSegment(segment, config));
+  const blocked = results.find(result => result.decision !== 'allow');
+
+  return blocked
+    ? { ...blocked, commands, results }
+    : { decision: 'allow', reason: results.some(r => r.reason === 'allowed-keyword') ? 'allowed-keyword' : 'terminal-default-policy', commands, results };
+}
+
+module.exports = {
+  BUILTIN_RULES,
+  findKeyword,
+  inspectCommand,
+  parseCustomPattern,
+  splitCommands,
+  startsWithKeyword
+};
