@@ -1,0 +1,84 @@
+{
+  "name": "agent-autopilot",
+  "displayName": "Agent Autopilot",
+  "description": "Configurable, lightweight autopilot for routine coding-agent approvals with terminal safety guardrails.",
+  "version": "0.0.1",
+  "publisher": "vamsi-k-krishna",
+  "license": "MIT OR Apache-2.0",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20"
+  },
+  "categories": ["Other"],
+  "keywords": ["agent", "autopilot", "auto-approve", "automation", "terminal", "safety"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./src/extension.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentAutopilot.toggle",
+        "title": "Agent Autopilot: Toggle"
+      },
+      {
+        "command": "agentAutopilot.explainLastDecision",
+        "title": "Agent Autopilot: Explain Last Decision"
+      }
+    ],
+    "configuration": {
+      "title": "Agent Autopilot",
+      "properties": {
+        "agentAutopilot.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Agent Autopilot."
+        },
+        "agentAutopilot.dryRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "Evaluate actions without clicking approval buttons."
+        },
+        "agentAutopilot.actions": {
+          "type": "object",
+          "default": {
+            "Accept": "allow",
+            "Accept All": "allow",
+            "Retry": "allow",
+            "Proceed": "allow",
+            "Run": "inspect",
+            "Run Task": "inspect",
+            "Execute": "inspect",
+            "Approve": "allow",
+            "Allow": "allow",
+            "Allow Once": "allow",
+            "Always Allow": "allow",
+            "Allow in Workspace": "allow"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["allow", "inspect", "ask", "ignore"]
+          },
+          "description": "Maps exact normalized button labels to an Agent Autopilot policy."
+        },
+        "agentAutopilot.terminalDefaultPolicy": {
+          "type": "string",
+          "enum": ["allow", "ask"],
+          "default": "allow",
+          "description": "Decision for inspected terminal commands that do not match a safety rule."
+        },
+        "agentAutopilot.terminalBlacklist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Additional blocked terminal patterns. Entries may be plain substrings or /regex/flags."
+        }
+      }
+    }
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/vscode": "^1.90.0"
+  }
+}
