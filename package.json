@@ -110,6 +110,20 @@
           },
           "default": [],
           "description": "Do not automatically approve command segments that start with one of these keywords. Block rules take precedence over allow keywords."
+        },
+        "agentAutopilot.agents": {
+          "type": "object",
+          "default": {
+            "antigravity": true,
+            "codex": true,
+            "copilot": true,
+            "devin": true,
+            "windsurf": true
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Enable or disable supported coding-agent surfaces. Unknown surfaces are always ignored."
         }
       }
     }
