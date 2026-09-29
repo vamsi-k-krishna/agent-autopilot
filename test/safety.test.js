@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { inspectCommand, parseCustomPattern, splitCommands, startsWithKeyword } = require('../src/safety');
+const { inspectCommand, matchesCustomBlacklist, splitCommands, startsWithKeyword } = require('../src/safety');
 
 const config = {
   terminalDefaultPolicy: 'allow',
@@ -76,7 +76,7 @@ test('blocked keywords keep matching commands with the user', () => {
   assert.equal(result.reason, 'blocked-keyword');
 });
 
-test('one blocked pipeline segment blocks automatic approval of the whole input', () => {
+test('blocked keyword in one pipeline command prevents automatic approval', () => {
   const result = inspectCommand('npm test | kubectl delete pod api', {
     ...config,
     terminalAllowKeywords: ['npm'],
@@ -86,7 +86,7 @@ test('one blocked pipeline segment blocks automatic approval of the whole input'
   assert.equal(result.command, 'kubectl delete pod api');
 });
 
-test('one blocked multiline command blocks automatic approval of the whole input', () => {
+test('blocked keyword in one multiline command prevents automatic approval', () => {
   const result = inspectCommand('npm test\necho done\nterraform destroy', {
     ...config,
     terminalAllowKeywords: ['npm', 'echo'],
