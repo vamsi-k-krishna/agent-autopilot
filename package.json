@@ -9,9 +9,20 @@
     "vscode": "^1.90.0",
     "node": ">=20"
   },
-  "categories": ["Other"],
-  "keywords": ["agent", "autopilot", "auto-approve", "automation", "terminal", "safety"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "agent",
+    "autopilot",
+    "auto-approve",
+    "automation",
+    "terminal",
+    "safety"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./src/extension.js",
   "scripts": {
     "test": "node --test"
@@ -58,21 +69,47 @@
           },
           "additionalProperties": {
             "type": "string",
-            "enum": ["allow", "inspect", "ask", "ignore"]
+            "enum": [
+              "allow",
+              "inspect",
+              "ask",
+              "ignore"
+            ]
           },
           "description": "Maps exact normalized button labels to an Agent Autopilot policy."
         },
         "agentAutopilot.terminalDefaultPolicy": {
           "type": "string",
-          "enum": ["allow", "ask"],
+          "enum": [
+            "allow",
+            "ask"
+          ],
           "default": "allow",
           "description": "Decision for inspected terminal commands that do not match a safety rule."
         },
         "agentAutopilot.terminalBlacklist": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "Additional blocked terminal patterns. Entries may be plain substrings or /regex/flags."
+        },
+        "agentAutopilot.terminalAllowKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Automatically allow inspected command segments that start with one of these keywords, unless a safety or block rule matches."
+        },
+        "agentAutopilot.terminalBlockKeywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Do not automatically approve command segments that start with one of these keywords. Block rules take precedence over allow keywords."
         }
       }
     }
