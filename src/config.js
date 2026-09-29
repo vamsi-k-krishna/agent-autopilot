@@ -15,12 +15,21 @@ const DEFAULT_ACTIONS = Object.freeze({
   'Allow in Workspace': 'allow'
 });
 
+const DEFAULT_AGENTS = Object.freeze({
+  antigravity: true,
+  codex: true,
+  copilot: true,
+  devin: true,
+  windsurf: true
+});
+
 function readConfig(vscode) {
   const config = vscode.workspace.getConfiguration('agentAutopilot');
 
   return {
     enabled: config.get('enabled', true),
     dryRun: config.get('dryRun', false),
+    agents: { ...DEFAULT_AGENTS, ...config.get('agents', {}) },
     actions: { ...DEFAULT_ACTIONS, ...config.get('actions', {}) },
     terminalDefaultPolicy: config.get('terminalDefaultPolicy', 'allow'),
     terminalBlacklist: config.get('terminalBlacklist', []),
@@ -29,4 +38,4 @@ function readConfig(vscode) {
   };
 }
 
-module.exports = { DEFAULT_ACTIONS, readConfig };
+module.exports = { DEFAULT_ACTIONS, DEFAULT_AGENTS, readConfig };
