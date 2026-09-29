@@ -18,65 +18,80 @@ const BUILTIN_RULES = Object.freeze([
   { id: 'root-shell', pattern: /(?:^|[;&|]\s*)su\s+(?:-|root)(?:\s|$)/i }
 ]);
 
-function parseCustomPattern(value) {
-  const text = String(value || '').trim();
-  if (!text) return null;
-
-  if (text.startsWith('/') && text.lastIndexOf('/') > 0) {
-    const end = text.lastIndexOf('/');
-    try {
-      return new RegExp(text.slice(1, end), text.slice(end + 1));
-    } catch {
-      return null;
-    }
-  }
-
-  return text.toLowerCase();
-}
-
-function splitCommands(value) {
-  return String(value || '')
+function splitCommands(commandText) {
+  return String(commandText || '')
     .split(/\r?\n|\|+/)
     .map(command => command.trim())
     .filter(Boolean);
 }
 
 function startsWithKeyword(command, keyword) {
-  const text = String(command || '').trim().toLowerCase();
-  const prefix = String(keyword || '').trim().toLowerCase();
-  if (!prefix) return false;
+  const normalizedCommand = String(command || '').trim().toLowerCase();
+  const normalizedKeyword = String(keyword || '').trim().toLowerCase();
 
-  return text === prefix || text.startsWith(prefix + ' ');
+  if (!normalizedKeyword) {
+    return false;
+  }
+
+  return normalizedCommand === normalizedKeyword
+    || normalizedCommand.startsWith(normalizedKeyword + ' ');
 }
 
-function findKeyword(command, keywords) {
-  return (keywords || []).find(keyword => startsWithKeyword(command, keyword)) || null;
+function findMatchingKeyword(command, keywords = []) {
+  return keywords.find(keyword => startsWithKeyword(command, keyword)) || null;
 }
 
-function inspectSegment(command, config) {
+function matchesCustomBlacklist(command, blacklist = []) {
+  const lowerCaseCommand = command.toLowerCase();
+
+  for (const blacklistEntry of blacklist) {
+    const entry = String(blacklistEntry || '').trim();
+    if (!entry) {
+      continue;
+    }
+
+    // Text wrapped in /.../flags is treated as a regular expression.
+    if (entry.startsWith('/') && entry.lastIndexOf('/') > 0) {
+      const lastSlash = entry.lastIndexOf('/');
+
+      try {
+        const pattern = new RegExp(entry.slice(1, lastSlash), entry.slice(lastSlash + 1));
+        if (pattern.test(command)) {
+          return blacklistEntry;
+        }
+      } catch {
+        // Invalid user regex should not crash or disable the extension.
+      }
+
+      continue;
+    }
+
+    if (lowerCaseCommand.includes(entry.toLowerCase())) {
+      return blacklistEntry;
+    }
+  }
+
+  return null;
+}
+
+function inspectSingleCommand(command, config) {
   for (const rule of BUILTIN_RULES) {
     if (rule.pattern.test(command)) {
       return { decision: 'ask', reason: 'builtin-safety-rule', rule: rule.id, command };
     }
   }
 
-  for (const raw of config.terminalBlacklist || []) {
-    const pattern = parseCustomPattern(raw);
-    const matched = pattern instanceof RegExp
-      ? pattern.test(command)
-      : pattern && command.toLowerCase().includes(pattern);
-
-    if (matched) {
-      return { decision: 'ask', reason: 'custom-safety-rule', rule: raw, command };
-    }
+  const blacklistMatch = matchesCustomBlacklist(command, config.terminalBlacklist);
+  if (blacklistMatch) {
+    return { decision: 'ask', reason: 'custom-safety-rule', rule: blacklistMatch, command };
   }
 
-  const blockedKeyword = findKeyword(command, config.terminalBlockKeywords);
+  const blockedKeyword = findMatchingKeyword(command, config.terminalBlockKeywords);
   if (blockedKeyword) {
     return { decision: 'ask', reason: 'blocked-keyword', rule: blockedKeyword, command };
   }
 
-  const allowedKeyword = findKeyword(command, config.terminalAllowKeywords);
+  const allowedKeyword = findMatchingKeyword(command, config.terminalAllowKeywords);
   if (allowedKeyword) {
     return { decision: 'allow', reason: 'allowed-keyword', rule: allowedKeyword, command };
   }
@@ -88,25 +103,40 @@ function inspectSegment(command, config) {
   };
 }
 
-function inspectCommand(command, config = {}) {
-  const commands = splitCommands(command);
-  if (!commands.length) {
+function inspectCommand(commandText, config = {}) {
+  const commands = splitCommands(commandText);
+
+  if (commands.length === 0) {
     return { decision: 'ask', reason: 'missing-command' };
   }
 
-  const results = commands.map(segment => inspectSegment(segment, config));
-  const blocked = results.find(result => result.decision !== 'allow');
+  const results = [];
 
-  return blocked
-    ? { ...blocked, commands, results }
-    : { decision: 'allow', reason: results.some(r => r.reason === 'allowed-keyword') ? 'allowed-keyword' : 'terminal-default-policy', commands, results };
+  for (const command of commands) {
+    const result = inspectSingleCommand(command, config);
+    results.push(result);
+
+    // One unsafe command makes the complete pipeline or multiline action unsafe to auto-approve.
+    if (result.decision !== 'allow') {
+      return { ...result, commands, results };
+    }
+  }
+
+  const usedAllowedKeyword = results.some(result => result.reason === 'allowed-keyword');
+
+  return {
+    decision: 'allow',
+    reason: usedAllowedKeyword ? 'allowed-keyword' : 'terminal-default-policy',
+    commands,
+    results
+  };
 }
 
 module.exports = {
   BUILTIN_RULES,
-  findKeyword,
+  findMatchingKeyword,
   inspectCommand,
-  parseCustomPattern,
+  matchesCustomBlacklist,
   splitCommands,
   startsWithKeyword
 };
