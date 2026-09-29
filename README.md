@@ -20,6 +20,9 @@ Agent Autopilot is intentionally small. Its job is to detect agent approval acti
 UI change
    |
    v
+Agent surface check
+   |
+   v
 Detector
    |
    v
@@ -48,6 +51,7 @@ agent-autopilot/
 ├── src/
 │   ├── extension.js
 │   ├── config.js
+│   ├── agents.js
 │   ├── detector.js
 │   ├── policy.js
 │   └── safety.js
@@ -75,6 +79,13 @@ All behavior is intended to be configurable through VS Code settings. Defaults f
 {
   "agentAutopilot.enabled": true,
   "agentAutopilot.dryRun": false,
+  "agentAutopilot.agents": {
+    "antigravity": true,
+    "codex": true,
+    "copilot": true,
+    "devin": true,
+    "windsurf": true
+  },
   "agentAutopilot.actions": {
     "Accept": "allow",
     "Accept All": "allow",
@@ -95,6 +106,18 @@ All behavior is intended to be configurable through VS Code settings. Defaults f
 ```
 
 Settings are read when decisions are made so users can tune behavior without maintaining a fork.
+
+## Coding-agent boundary
+
+Agent Autopilot only considers approval buttons after their owning surface has been identified as a supported coding-agent assistant. The initial registry covers Antigravity, Codex, GitHub Copilot, Devin, and Windsurf.
+
+This is a safety boundary, not just a text filter. An `Accept` button in the merge editor or a `Run` button in ordinary VS Code must never reach the approval policy simply because its text matches an Agent Autopilot action.
+
+Unknown surfaces are ignored by default. Supported agents can also be disabled individually with `agentAutopilot.agents`.
+
+> **Invariant:** Agent Autopilot never approves an element unless its surface is first associated with an enabled, supported coding agent.
+
+Surface markers live in `src/agents.js`. They should remain specific, readable, and covered by tests when new coding assistants are added.
 
 ## Safety model
 
