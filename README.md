@@ -102,9 +102,16 @@ Terminal actions configured as `inspect` are checked before approval. Built-in r
 
 A matched terminal rule returns `ask`: Agent Autopilot does not click the approval button and leaves the decision to the user.
 
-Custom terminal blacklist entries support plain substrings and `/regex/flags` syntax.\n\n### Command-start keyword rules\n\nUsers can configure command-start keywords that are automatically allowed or kept for manual approval. Keyword matching is case-insensitive and applies only at the start of each trimmed command segment.\n\nPipelines and multiline terminal text are evaluated as separate commands. For example, `npm test | grep ERROR` is evaluated as `npm test` and `grep ERROR`; `npm test\\necho done` is evaluated as two commands. If any segment is blocked, matches a safety rule, or otherwise requires confirmation, Agent Autopilot does not automatically approve the overall terminal action.\n\nSafety precedence is: **built-in safety rules -> custom blacklist -> blocked keywords -> allowed keywords -> terminal default policy**. This means an allow keyword cannot override a destructive built-in safety rule.
+Custom terminal blacklist entries support plain substrings and `/regex/flags` syntax.\n\n### Command-start keyword rules\n\nUsers can configure command-start keywords that are automatically allowed or kept for manual approval. Keyword matching is case-insensitive and applies only at the start of each trimmed command segment.\n\nPipelines and multiline terminal text are evaluated as separate commands. For example, `npm test | grep ERROR` is evaluated as `npm test` and `grep ERROR`; `npm test
+echo done` is evaluated as two commands. If any segment is blocked, matches a safety rule, or otherwise requires confirmation, Agent Autopilot does not automatically approve the overall terminal action.\n\nSafety precedence is: **built-in safety rules -> custom blacklist -> blocked keywords -> allowed keywords -> terminal default policy**. This means an allow keyword cannot override a destructive built-in safety rule.
 
 This is a guardrail, not a sandbox. Commands can be composed in many ways, and no pattern matcher can prove that an arbitrary command is safe.
+
+## Code philosophy
+
+Agent Autopilot favors readable, beginner-friendly JavaScript over clever abstractions. Code should use self-explanatory names, simple control flow, Node.js and VS Code built-ins where practical, and event-driven work that keeps idle CPU and memory use low.
+
+Contributors should avoid unnecessary dependencies and extraction. Documentation and tests are considered part of a feature. See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete engineering guidelines.
 
 ## Development
 
