@@ -101,7 +101,9 @@ All behavior is intended to be configurable through VS Code settings. Defaults f
     "Allow in Workspace": "allow"
   },
   "agentAutopilot.terminalDefaultPolicy": "allow",
-  "agentAutopilot.terminalBlacklist": [],\n  "agentAutopilot.terminalAllowKeywords": ["npm", "bun", "./gradlew"],\n  "agentAutopilot.terminalBlockKeywords": ["terraform", "kubectl"]
+  "agentAutopilot.terminalBlacklist": [],
+  "agentAutopilot.terminalAllowKeywords": ["npm", "bun", "./gradlew"],
+  "agentAutopilot.terminalBlockKeywords": ["terraform", "kubectl"]
 }
 ```
 
