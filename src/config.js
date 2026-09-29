@@ -23,7 +23,9 @@ function readConfig(vscode) {
     dryRun: config.get('dryRun', false),
     actions: { ...DEFAULT_ACTIONS, ...config.get('actions', {}) },
     terminalDefaultPolicy: config.get('terminalDefaultPolicy', 'allow'),
-    terminalBlacklist: config.get('terminalBlacklist', [])
+    terminalBlacklist: config.get('terminalBlacklist', []),
+    terminalAllowKeywords: config.get('terminalAllowKeywords', []),
+    terminalBlockKeywords: config.get('terminalBlockKeywords', [])
   };
 }
 
